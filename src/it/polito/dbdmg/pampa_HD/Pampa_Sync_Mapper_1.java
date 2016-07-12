@@ -100,19 +100,16 @@ class Pampa_Sync_Mapper_1 extends Mapper<
             
     		String row=value.toString();
     		int dataset_size=0; //not used
-    	//	System.out.println("\n ho letto key: "+key.toString());
-    	//	System.out.println("\n ho letto key-value: "+row);
+
     		
     		if (!row.startsWith("*")) {
     	//	System.out.println("\n ho letto: "+row);
     		String [] row1 = row.split("\\*\t");
     		String oldkey= row1[0]+"*";  //oldkey
-    		String oldvalue= row1[1];  // e  oldvalue pronti per essere inviati
-            //analizzo l'intestazione
+    		String oldvalue= row1[1];
     		String [] head2 = row1[0].split("\\|\\|");
-    		String projection = head2[0].replaceAll("\\[","").replaceAll("\\]","");  // questa è la proiezione che mi serve
-    	//	System.out.println("\n ho letto projection: "+projection);
-    	//	System.out.println("\n ho letto head: "+head2[0]);
+    		String projection = head2[0].replaceAll("\\[","").replaceAll("\\]","");
+
 
             int deleted=Integer.parseInt(head2[1].trim());
             

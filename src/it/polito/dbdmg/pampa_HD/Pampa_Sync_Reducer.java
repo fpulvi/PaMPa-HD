@@ -95,19 +95,16 @@ class Pampa_Sync_Reducer extends Reducer<
 		int deleted =tab.get_deleted();
 		String sizes= Integer.toString(size);
 		tabstring=tab.get_projection().toString()+"||"+sizes+"||"+deleted+"*";
-		//context.write(new Text("*"+tab.dammi_proiezione().toString()), new Text(sizes));
-		
+
 		// header separator *
 		//within header, separator projection with table legnth ||
 		//within table, row separator ||
 		//within row, separator item and transactions ,
 		String tabstring2="";
-		//System.out.println("\n this is transposed table"+tabtemp.dammi_proiezione()+" containing "+tabtemp.mostraitemsetString());
 		for (row_rid r: tab.get_list()) {
 			tabstring2=tabstring2+r.as_string()+" ||";
 			
 			
-			//System.out.println("\n"+r.mostraitem()+" "+ r.mostralista_trans());				
 			}
 		context.write(new Text(tabstring), new Text(tabstring2));
 	}
@@ -152,7 +149,6 @@ class Pampa_Sync_Reducer extends Reducer<
 
 	protected void setup(Context context) throws IOException, InterruptedException
 	{
-    	// Leggo il minsup
 		Heartbeat.createHeartbeat(context);
 		minsup = Integer.parseInt(context.getConfiguration().get("minsup"));
 		
@@ -181,18 +177,10 @@ class Pampa_Sync_Reducer extends Reducer<
     	key_count++;
     	
     	int dropped_iteration=0;
-        // TODO: implement here Reduce code
-        //int occurrances = 0;
-       // for (IntWritable rigatemp : righe) {
-       //     occurrances += rigatemp.get();
-       // }
-       // context.write(key, new IntWritable(occurrances));
-    	
-    	//System.out.println("\n just arrived "+key.toString()+" | "+rigaTT.toString());
-    	//table building
+
     	if (key.toString().startsWith("\\*\\*\\*")) {//useless
     		
-    		//System.out.println("\n row 188");
+
     		String itemset2=key.toString();
     		String[] itemset=itemset2.replaceAll("\\*\\*\\*","").split("\\|\\|");
 			int supmax=0;

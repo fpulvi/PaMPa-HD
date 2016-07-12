@@ -123,9 +123,7 @@ class Pampa_B_Mapper extends Mapper<
 		}
 		context.write(new Text(" "+itemset),new Text(projection_s+"||||"+tabstring+"|*|"+tabstring2+"|*|"+itemset));
 		sent_tables++;
-		//context.write(new Text(tabstring), new Text(tabstring2));
-		
-		//System.out.println(" "+itemset+"\t"+projection_s+"||||"+tabstring+"|*|"+tabstring2);
+
 	}
     
     
@@ -161,194 +159,110 @@ class Pampa_B_Mapper extends Mapper<
     
     private static void recursive (tableB tab, Context context) throws IOException, InterruptedException
 	{ 	iter++;
-		//clona la proiezione attuale
 		List<Integer> projection =new ArrayList<Integer>();
 		for (int a: tab.get_projection()) projection.add(a);
-		
-		//System.out.print("\n rigo 225, proiezione: "+tab.dammi_proiezione_stringa_spazi()+" con eliminate "+tab.dammi_eliminate());
-		
-		
-		
-		//1^o Pruning: controllo se potenzialmente è frequente - si deve controllare la lunghezza potenziale più il prefisso già ottenuto finora
-		//if (lungh_max_righe<minsup)  // in teoria questo controllo è superfluo
-		//{//System.out.print("Ramo da eliminare- 1o pruning");
-		//return;
-		//}
-		// verifico la presenza di itemset ovunque
-		 //if ((tab.get_list().size()==1) & (tab.max_length()>=minsup)) {
-		//12 aprile
+
 		if ((tab.get_list().size()==1)) {
-			 	
-				
-				
-				
-	        	// ha solo una voce, non ha senso dividerla
-	        	int num_row=tab.max_length();
+			   	int num_row=tab.max_length();
 	        	String itemset_complete=tab.showitemsetString();
-	        	//context.write(new Text("***"+itemset_complete), new Text(tab.get_projection_string()+"--"+Integer.toString(num_row)));
-	        	//System.out.println(itemset_complete+"\t"+tab.get_projection_string()+"||||***"+itemset_complete+"|*|"+tab.get_projection_string()+"--"+Integer.toString(num_row));
 	        	String projection_new = tab.get_projection_string();
 	        	
-	        	if (seen_mod.containsKey(itemset_complete)) { // qui non l'aggiungo la combinazione che sto per inviare fra i closed perchè andrei ad aggiungerla 
-	            	//System.out.println("\n luckily we are here");// se c'è, devo fare i controlli				//prima ancora di esaminarla nel reducer
+	        	if (seen_mod.containsKey(itemset_complete)) {
 					String[] parts2 = ((String) seen_mod.get(itemset_complete)).split("--");
 					String projection_old= parts2[0];
 					int comparison = comparator_f(projection_old,projection_new);
-					if (comparison<=0) {//System.out.println("\n317 la nuova comparable ha detto che esiste già: questo itemsset: "+itemset_nuovo+" trovato qui:" +proiezione_nuova+" era già stato trovato qui: "+proiezione_vecchia);
-						//System.out.println("\n luckily we are here e l'ho eliminata: ");
-					//return;
+					if (comparison<=0) {
 					}
 					else {seen_mod.put(itemset_complete,projection_new+"--"+Integer.toString(num_row));
-	             	//System.out.println("\n321ho appena aggiunto:"+itemset_nuovo+"||"+ proiezione_nuova+"--"+Integer.toString(lungh_proiezione+eliminate));
-					//	}
 	            	}
 				}
 				else {seen_mod.put(itemset_complete,projection_new+"--"+Integer.toString(num_row));
-				//System.out.println("\n326ho appena aggiunto:"+itemset_nuovo+"||"+ proiezione_nuova+"--"+Integer.toString(lungh_proiezione+eliminate));
-					}
-	        	
-	        	
-	        	
-	        	//12 aprile
-	        	//context.write(new Text(itemset_complete),new Text(tab.get_projection_string()+"||||***"+itemset_complete+"|*|"+tab.get_projection_string()+"--"+Integer.toString(num_row))); 
-	        	//closed_modificata.put(itemset_completo,proiezione+","+row_riga+"--"+Integer.toString(num_row_riga));
-	         	//System.out.println("\nLUNGHI 1: ho appena scritto:"+itemset_completo+"||"+tab.dammi_proiezione_stringa_spazi2()+"--"+Integer.toString(num_row_riga));
-	        return; }
-		
+				}
+	        	return;
+		}
 		List<Integer> elements_in_all = tab.elements_in_all(dataset_size);
 		if (elements_in_all.size()>0) {
-			//System.out.println("\n questi elementi erano ovunque:" +presentiovunque);
 			tab.modify_only_list(elements_in_all);
 		}
 		
 		String itemset = tab.showitemsetString();
 		int projection_size= tab.get_projection_size();
-	
-		
-       
-        	
-		
-		//COMPARABLE
-				// aggiungo una memoria che tiene conto degli itemset già visti
-				// la particolarità di questa memoria è che viene aggiornata con gli itemset più "vecchi"
-				// secondo un ordine di tipo depth first nell'esplorazione dell'albero
-				//
-				//prima controllo se già c'è
-				
-		//if (projection_size>=minsup)	{
+
 			String projection_new =  tab.get_projection_string();
 			//context.write(new Text("***"+itemset), new Text(tab.get_projection_string()+"--"+Integer.toString(projection_size)));
 			//System.out.println(itemset+"\t"+tab.get_projection_string()+"||||***"+itemset+"|*|"+tab.get_projection_string()+"--"+Integer.toString(projection_size));
         	//context.write(new Text(itemset),new Text(tab.get_projection_string()+"||||***"+itemset+"|*|"+tab.get_projection_string()+"--"+Integer.toString(projection_size))); 
         	
-        	if (seen_mod.containsKey(itemset)) { // qui non l'aggiungo la combinazione che sto per inviare fra i closed perchè andrei ad aggiungerla 
-            	//System.out.println("\n luckily we are here");// se c'è, devo fare i controlli				//prima ancora di esaminarla nel reducer
+        	if (seen_mod.containsKey(itemset)) {
 				String[] parts2 = ((String) seen_mod.get(itemset)).split("--");
 				String projection_old= parts2[0];
 				int comparison = comparator_f(projection_old,projection_new);
 				if (comparison<=0) {//System.out.println("\n317 la nuova comparable ha detto che esiste già: questo itemsset: "+itemset_nuovo+" trovato qui:" +proiezione_nuova+" era già stato trovato qui: "+proiezione_vecchia);
-					//System.out.println("\n luckily we are here e l'ho eliminata: ");
-				//return;
+
 				}
 				else {seen_mod.put(itemset,projection_new+"--"+Integer.toString(projection_size));
-             	//System.out.println("\n321ho appena aggiunto:"+itemset_nuovo+"||"+ proiezione_nuova+"--"+Integer.toString(lungh_proiezione+eliminate));
-				//	}
             	}
 			}
 			else {seen_mod.put(itemset,projection_new+"--"+Integer.toString(projection_size));
 			//System.out.println("\n326ho appena aggiunto:"+itemset_nuovo+"||"+ proiezione_nuova+"--"+Integer.toString(lungh_proiezione+eliminate));
 				}
-        	
-				//closed_modificata.put(itemset,tab.dammi_proiezione_stringa()+"--"+Integer.toString(lungh_proiezione));
-			//System.out.println("\n rigo 276 "+ lungh_proiezione+" ma minsup e' "+minsup+" itemset: "+ itemset);		
-		//}
-		
-		// inizio a verificare se chiamare  le altre
-		
-		// questo vettore serve per il pruning dei valori già analizzati e
-		// eliminare le righe che già non avranno abbastanza supp.
 		List <Integer> found=new ArrayList();
 		
-		//per ogni possibile numero di transazione
 		for (int i=1;i<=dataset_size;i++) {
 			boolean found2=false;
-			//inizializzo nuova tabella
 			tableB tabtemp=new tableB();
 			for (row_B r: tab.get_list()){
-				//System.out.print("\naa"+r.mostraitem()+" "+r.mostralista_trans());
 				if (r.find_first_and_del((Integer) i)) {
-					//se lo contiene
-					
+
 					row_B r2= (row_B) r.clone();
-					//non dovrebbe piu servire perchè ho snellito piano piano ogni riga
-					//for (Integer f: trovati) r2.remove_element((Integer) f);
 					if (r2.length()+projection_size+1<minsup) {
-						//riga inutile, esco dal for;
+
 						continue;
 					}
-					found2=true;  //questa riga è utile, la aggiungo
+					found2=true;
 					tabtemp.add_row(r2);
 					
 				}				
 			}
-			//ora pensiamo a modicare la proiezione
+
 			if (found2) {
-				found.add(i);  // verificare -- mi pare si possa eliminare
+				found.add(i);
 			
-			tabtemp.add_deleted(tab.get_deleted());  //eliminate potrebbe essere stato aggiornato
+			tabtemp.add_deleted(tab.get_deleted());
 			
 			tabtemp.create_projection_modify_list(projection,i);
-			//se l'itemset è già visto salto
-			//if (visti.contains(tabtemp.mostraitemsetString())) continue;
+
 			
 			String itemset_new=tabtemp.showitemsetString();
 			projection_new=tabtemp.get_projection_string_spaces();
 			
-			if (seen_mod.containsKey(itemset_new)) { // qui non l'aggiungo la combinazione che sto per inviare fra i closed perchè andrei ad aggiungerla 
-				// se c'è, devo fare i controlli				//prima ancora di esaminarla nel reducer
+			if (seen_mod.containsKey(itemset_new)) {
 				String[] parts2 = ((String) seen_mod.get(itemset_new)).split("--");
 				String projection_old= parts2[0];
 				int comparison = comparator_f(projection_old,projection_new);
 				if (comparison<=0) {//System.out.println("\n317 la nuova comparable ha detto che esiste già: questo itemsset: "+itemset_nuovo+" trovato qui:" +proiezione_nuova+" era già stato trovato qui: "+proiezione_vecchia);
 				continue;
 				}
-				else {//12aprseen_mod.put(itemset_new,projection_new+"--"+Integer.toString(projection_size+deleted));
-             	//System.out.println("\n321ho appena aggiunto:"+itemset_nuovo+"||"+ proiezione_nuova+"--"+Integer.toString(lungh_proiezione+eliminate));
-				//	}
+				else {
             	}
 			}
-			else {//12aprseen_mod.put(itemset_new,projection_new+"--"+Integer.toString(projection_size+deleted));
-			//System.out.println("\n326ho appena aggiunto:"+itemset_nuovo+"||"+ proiezione_nuova+"--"+Integer.toString(lungh_proiezione+eliminate));
+			else {
 				}
-			//12apriif ((tabtemp.get_list().size()==1) & (tabtemp.max_length()>=minsup)){
+
 			if (tabtemp.get_list().size()==1) {
 			 	
-	        	// ha solo una voce, non ha senso dividerla
 	        	int num_row_row2=tabtemp.max_length();
 	        	String itemset_complete2=tabtemp.showitemsetString();
-	        	//System.out.println("\n rigo 349"+itemset_completo2+num_row_riga2);
-	        	//context.write(new Text("***"+itemset_complete2), new Text(tabtemp.get_projection_string()+"--"+Integer.toString(num_row_row2)));
-	        	//System.out.println(itemset_complete2+"\t"+tab.get_projection_string()+"--"+Integer.toString(num_row_row2));
-	        	//apr12context.write(new Text(itemset_complete2),new Text(tabtemp.get_projection_string()+"||||***"+itemset_complete2+"|*|"+tabtemp.get_projection_string()+"--"+Integer.toString(num_row_row2))); 
-	        
+
 				seen_mod.put(itemset_complete2,tabtemp.get_projection_string()+"--"+Integer.toString(num_row_row2));
-				//System.out.println("\n326ho appena aggiunto:"+itemset_nuovo+"||"+ proiezione_nuova+"--"+Integer.toString(lungh_proiezione+eliminate));
-					
-	        	//closed_modificata.put(itemset_completo,proiezione+","+row_riga+"--"+Integer.toString(num_row_riga));
-	        		//System.out.println("\nLUNGHI 1_: ho appena scritto:"+itemset_completo2+"||"+tabtemp.dammi_proiezione_stringa_spazi2()+"--"+Integer.toString(num_row_riga2));
-	        continue; }
+				continue; }
 			
-			 //serve per fare breadthfirst a livello locale
-			//Questa printf stampa la tt che si sta per analizzare
-			//System.out.println("\n Questa è la transposed table"+tabtemp.dammi_proiezione()+" che contiene gli itemset "+tabtemp.mostraitemsetString()+" con eliminate: "+tabtemp.dammi_eliminate());
-			//for (row r: tabtemp.get_list()) {
-			//	System.out.println("\n"+r.mostraitem()+" "+ r.mostralista_trans());				
-				//}
+
 			int found3=0;
 			int mb=1024*1024;
 			Runtime runtime = Runtime.getRuntime();
 			stopTime=System.currentTimeMillis();
-			//System.out.println("time:"+Long.toString(stopTime-startTime));
+
 			long elapsedTime=(stopTime-startTime)/1000;
 			
 			if (elapsedTime>(60*60*1)) print_table(tabtemp,context);
@@ -356,21 +270,12 @@ class Pampa_B_Mapper extends Mapper<
 			if ((((runtime.freeMemory()) / mb)>0)&&(iter<=max_tables)) {recursive(tabtemp,context);}
 			else {print_table(tabtemp,context);}}
 			tabtemp=null;
-			//for (int a=0; a<=br_to_deep;a++)
-				//if (projection.contains((Integer) a)) {trovato2=1;}
-			
-			//if ((trovato2==1)&(iter<=3000)) ricorsiva(tabtemp,context);
-			//else {stampa_tabella(tabtemp, context);
-			//tabtemp=null;}
+
 		
 			}
 			
 	}
-	/*
-	for (riga t: tab.dammi_lista()) {
-		System.out.print("\nfinale "+t.mostraitem()+" "+ t.mostralista_trans());				
-		}
-		*/
+
 		return;
 			}
     
@@ -399,7 +304,6 @@ class Pampa_B_Mapper extends Mapper<
 			String[] parts = ((String) seen_mod.get(key)).split("--");
 			if (Integer.parseInt(parts[1])>=minsup) {
 			context.write(new Text(key), new Text(parts[0]+"||||***"+key+"|*|"+parts[0]+"--"+parts[1]));
-			//System.out.println("\n"+key+"\t"+parts[0]+"||||***"+key+"|*|"+parts[0]+"--"+parts[1]);
 			}
 			}
 		}
@@ -440,21 +344,15 @@ class Pampa_B_Mapper extends Mapper<
            // System.out.println("Analyzing: "+itemset_complete);
             String projection_new=projection;
            
-            if (seen_mod.containsKey(itemset_complete)) { // qui non l'aggiungo la combinazione che sto per inviare fra i closed perchè andrei ad aggiungerla 
-            	//System.out.println("\n luckily we are here");// se c'è, devo fare i controlli				//prima ancora di esaminarla nel reducer
-				String[] parts2 = ((String) seen_mod.get(itemset_complete)).split("--");
+            if (seen_mod.containsKey(itemset_complete)) { String[] parts2 = ((String) seen_mod.get(itemset_complete)).split("--");
 				String projection_old= parts2[0];
 				int comparison = comparator_f(projection_old,projection_new);
-				if (comparison<=0) {//System.out.println("\n317 la nuova comparable ha detto che esiste già: questo itemsset: "+itemset_nuovo+" trovato qui:" +proiezione_nuova+" era già stato trovato qui: "+proiezione_vecchia);
-					//System.out.println("\n luckily we are here e l'ho eliminata: ");
+				if (comparison<=0) {
 				return;
 				}
 				
 			}
-			
-            
-            
-            for (int f=0;f<tables.length;f++) {
+			for (int f=0;f<tables.length;f++) {
             	row_B rowtemp;										
             	String [] row2= tables[f].split(",");
             	String[] transactions_string=row2[1].split(" ");
@@ -469,14 +367,10 @@ class Pampa_B_Mapper extends Mapper<
             	tab.add_row(rowtemp);
             	
             }
-             // per ora lo metto qui poi lo metto prima
+
             tab_input.put(projection_new, tab);
             count_input++;
-            //if(count_input%max_tables==0)
-            	//{empty_tab_input(context);
-            	//count_input=0;}
-            
-           // recursive (tab,context);
+
            }
     		else {
     			//String[] parts1 = row.split("\t");
@@ -488,33 +382,27 @@ class Pampa_B_Mapper extends Mapper<
     			String itemset_complete=parts1[0].replaceAll("\\*\\*\\*","");
     			String projection=parts2[0];
     			String minsup=parts2[1];
-    			//System.out.println("\n sending: "+itemset_complete+" and value: "+projection+"||||"+oldkey+"|*|"+oldvalue);
     			if (seen_mod.containsKey(itemset_complete)) { // it is already among the found itemsets
-    				// se c'è, devo fare i controlli				
+
     				String[] parts3 = ((String) seen_mod.get(itemset_complete)).split("--");  //retrieve the already in memory one
     				String projection_old= parts3[0];  //this is the projection of the oldest
     				int comparison = comparator_f(projection_old,projection);
-    				if (comparison<=0) {  //the already in memory was the one to keep
-    					//System.out.println("\n317 la nuova comparable ha detto che esiste già: questo itemsset: "+itemset_nuovo+" trovato qui:" +proiezione_nuova+" era già stato trovato qui: "+proiezione_vecchia);
-    					//ignore it!
+    				if (comparison<=0) {
     				}
     				else {
-    	                //12aprcontext.write(new Text(itemset_complete),new Text(projection+"||||"+oldkey+"|*|"+oldvalue));   				
+
     					seen_mod.put(itemset_complete,projection+"--"+minsup);
-                 	//System.out.println("\n321ho appena aggiunto:"+itemset_nuovo+"||"+ proiezione_nuova+"--"+Integer.toString(lungh_proiezione+eliminate));
-    				//	}
+
                 	}
     			}
-    			else {//seen_mod.put(itemset_new,projection_new+"--"+Integer.toString(projection_size+deleted));
-    			//System.out.println("\n326ho appena aggiunto:"+itemset_nuovo+"||"+ proiezione_nuova+"--"+Integer.toString(lungh_proiezione+eliminate));
-    				//12aprcontext.write(new Text(itemset_complete),new Text(projection+"||||"+oldkey+"|*|"+oldvalue));   				
+    			else {
 					seen_mod.put(itemset_complete,projection+"--"+minsup);
     				}
-                //context.write(new Text(itemset_complete),new Text(projection+"||||"+oldkey+"|*|"+oldvalue));   
+
     		}
     		
     }
           
 			
 			
-    }
+}

@@ -128,7 +128,6 @@ class Pampa_Sync_Mapper_2 extends Mapper<
             tab.modify_projection_and_list(projectionI);
             tab.add_deleted(deleted);
             int projection_length= tab.get_projection_size(); //not used anymore
-            //System.out.println("\n proiezione della tab:"+tab.dammi_proiezione_stringa_spazi());
             for (int f=0;f<tables.length;f++) { //get the itemset! useful to understand if i have to stop
             	row_rid rowtemp;										// create the table
             	String [] row2= tables[f].split(",");
@@ -149,8 +148,7 @@ class Pampa_Sync_Mapper_2 extends Mapper<
     			String[] parts2= parts1[1].split("--");
     			String itemset_complete=parts1[0].replaceAll("\\*\\*\\*","");
     			String projection=parts2[0];
-    			//System.out.println("\n sending: "+itemset_completo+" and value: "+proiezione+"||||"+oldkey+"|*|"+oldvalue);
-                context.write(new Text(itemset_complete),new Text(projection+"||||"+oldkey+"|*|"+oldvalue));    			
+                context.write(new Text(itemset_complete),new Text(projection+"||||"+oldkey+"|*|"+oldvalue));
     		}
     }
           

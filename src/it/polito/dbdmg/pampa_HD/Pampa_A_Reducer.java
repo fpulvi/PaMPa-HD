@@ -85,12 +85,7 @@ class Pampa_A_Reducer extends Reducer<Text,Text,Text,Text>
 		int deleted =tab.get_deleted();
 		String sizes= Integer.toString(size);
 		tabstring=tab.get_projection().toString()+"||"+deleted+"*";
-		//context.write(new Text("*"+tab.dammi_proiezione().toString()), new Text(sizes));
-		
-		// header separator *
-				//within header, separator projection with table legnth ||
-				//within table, row separator ||
-				//within row, separator item and transactions ,
+
 		String tabstring2="";
 		for (row_A r: tab.get_list()) {
 			tabstring2=tabstring2+r.as_string()+" ||";
@@ -100,8 +95,8 @@ class Pampa_A_Reducer extends Reducer<Text,Text,Text,Text>
 	}
 
 	private static void recursive (tableA tab, Context context) throws IOException, InterruptedException
-	{ 	iter++;
-	//clone the current projection
+	{
+	iter++;
 	List<Integer> projection =new ArrayList<Integer>();
 	for (int a: tab.get_projection()) projection.add(a);
 	if ((tab.get_list().size()==1) & (tab.max_length()>=minsup)) {		 
@@ -113,13 +108,7 @@ class Pampa_A_Reducer extends Reducer<Text,Text,Text,Text>
         	int num_row=tab.max_length();
         	String itemset_complete=tab.showitemsetString();
         	context.write(new Text("***"+itemset_complete), new Text(tab.get_projection_string()+"--"+Integer.toString(num_row)));
-        	// if (num_row>=30) fabio1
-    			//System.out.println("\n rigo 247"+itemset_completo+num_row_riga);
-        	//closed_modificata.put(itemset_completo,proiezione+","+row_riga+"--"+Integer.toString(num_row_riga));
-         	//System.out.println("\nLUNGHI 1: ho appena scritto:"+itemset_completo+"||"+tab.dammi_proiezione_stringa_spazi2()+"--"+Integer.toString(num_row_riga));
-        //return;
         	}
-	
 	List<Integer> elements_in_all= tab.elements_in_all(dataset_size);
 	if (elements_in_all.size()>0) {
 		//elements in all the lists
@@ -131,14 +120,7 @@ class Pampa_A_Reducer extends Reducer<Text,Text,Text,Text>
 	int length_max_rows=tab.max_length();
 	if (projection_size>=minsup)	
 	context.write(new Text("***"+itemset), new Text(tab.get_projection_string()+"--"+Integer.toString(projection_size)));
-			//closed_modificata.put(itemset,tab.dammi_proiezione_stringa()+"--"+Integer.toString(lungh_proiezione));
-	//if (lungh_proiezione>=30)
-		//System.out.println("\n rigo 276"+itemset+lungh_proiezione);		
-	
-	
-	// start to verify to call the other
-	//this vector is used to prune the values already seen and delete the rows too short
-	List <Integer> found=new ArrayList();	
+		List <Integer> found=new ArrayList();
 	//for each possible tid
 	for (int i=1;i<=dataset_size;i++) {
 		boolean found2=false;
@@ -163,7 +145,7 @@ class Pampa_A_Reducer extends Reducer<Text,Text,Text,Text>
 		}
 		//modify the projection
 		if (found2) {
-			found.add(i);  // should be useless - verify
+			found.add(i);
 		tabtemp.add_deleted(deleted);  //deleted could be updated
 		tabtemp.create_projection_modify_list(projection,i);
 		String itemset_new=tabtemp.showitemsetString();
@@ -173,7 +155,7 @@ class Pampa_A_Reducer extends Reducer<Text,Text,Text,Text>
 			String[] parts2 = ((String) seen_mod.get(itemset_new)).split("--");
 			String projection_old= parts2[0];
 			int comparison = comparator_f(projection_old,projection_new);
-			if (comparison<=0) {//System.out.println("\n this "+itemset_nuovo+" found here:" +proiezione_nuova+" already found here: "+proiezione_vecchia);
+			if (comparison<=0) {
 			continue;
 			}
 			else {seen_mod.put(itemset_new,projection_new+"--"+Integer.toString(projection_size+deleted));
@@ -193,13 +175,7 @@ class Pampa_A_Reducer extends Reducer<Text,Text,Text,Text>
         	String itemset_complete2=tabtemp.showitemsetString();        	
         	context.write(new Text("***"+itemset_complete2), new Text(tabtemp.get_projection_string()+"--"+Integer.toString(num_row_row2)));
         	continue; }
-		
-		 
-		//This printf prints everything is going to be processed
-		//System.out.println("\n Questa è la transposed table"+tabtemp.dammi_proiezione()+" che contiene gli itemset "+tabtemp.mostraitemsetString()+" con eliminate: "+tabtemp.dammi_eliminate());
-		//for (riga r: tabtemp.dammi_lista()) {
-			//System.out.println("\n"+r.mostraitem()+" "+ r.mostralista_trans());				
-			//}
+
 			int found3=0;
 			int mb=1024*1024;
 			Runtime runtime = Runtime.getRuntime();
@@ -219,7 +195,6 @@ class Pampa_A_Reducer extends Reducer<Text,Text,Text,Text>
 	String[] k2= key2.split(",");
 	List<Integer> projection1 = new ArrayList<Integer>();
 	List<Integer> projection2 = new ArrayList<Integer>();
-	//System.out.println("\nsto per processare: "+key1.toString()+" e "+key2.toString());
 	for (String s: k1) projection1.add(Integer.parseInt(s.trim()));
 	for (String s: k2) projection2.add(Integer.parseInt(s.trim()));
 	if (projection1.size()==projection2.size()) {
@@ -247,17 +222,14 @@ class Pampa_A_Reducer extends Reducer<Text,Text,Text,Text>
 	
 	protected void setup(Context context) throws IOException, InterruptedException
 	{
-    	// read the minsup
 		Heartbeat.createHeartbeat(context);
 		minsup = Integer.parseInt(context.getConfiguration().get("minsup"));
 		max_tables = Integer.parseInt(context.getConfiguration().get("max_tables"));
-    	
 	}
 	
 	protected void cleanup (Context context) throws IOException, InterruptedException {
 		Heartbeat.stopbeating();
 		context.getCounter("sent_tables","sent_tables").increment(sent_tables);
-
 	}
 	 
 	
@@ -270,8 +242,7 @@ class Pampa_A_Reducer extends Reducer<Text,Text,Text,Text>
     	String key_s = key.toString();
     	tab.modify_projection(Integer.parseInt(key_s));
     	for (Text r: rowTT)
-    	{	//System.out.println("\n just arrived "+key.toString()+" | "+r.toString());
-			//numerorighedataset++;  useless now
+    	{
 			String[] parts = r.toString().split(",");
 			if (parts.length>1)
 			{	String[] transaction_strings=parts[1].split(" ");
@@ -293,7 +264,6 @@ class Pampa_A_Reducer extends Reducer<Text,Text,Text,Text>
 			}
 			
 		}
-    	// start Carpenter
     	recursive(tab, context);
     	
     }
