@@ -15,9 +15,12 @@ import it.polito.dbdmg.pampa_HD.util.tableB;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
@@ -39,11 +42,13 @@ class Pampa_B_Mapper extends Mapper<
     static int dataset_size=0;
     static int iter=0;
     public static int max_tables;
+    public static int br_to_deep;
     public static int sent_tables=0;
-    public static long startTime;
+    public static long startTime=0;
     public static long stopTime;
-   
     static Hashtable seen_mod = new Hashtable<String, String >();
+    static Map<String, tableB> tab_input = new HashMap<String, tableB>();
+    public static int count_input=0;
     
     public static class Heartbeat extends Thread {
 		private static final int sleepTime = 400; // time in seconds
@@ -80,7 +85,26 @@ class Pampa_B_Mapper extends Mapper<
 		}
 		
 	}
-    
+    private static void empty_tab_input(Context context) throws IOException, InterruptedException
+    {
+    	//prima la ordino per key
+    	List<String> keys = new ArrayList(tab_input.keySet());
+    	Collections.sort(keys, new Comparator<String>() {
+    		
+            public int compare(String string1,String string2) {
+            	
+                return comparator_f(string1,string2);
+            }
+        });
+    	if (startTime==0) startTime=System.currentTimeMillis();
+    	//for the moment i just print them
+    	 for (String p : keys) {
+    		// System.out.println("keys sorted:"+p);
+    		 recursive(tab_input.get(p),context);
+    	       
+    	    }
+    	 tab_input.clear();
+    }
     
     private static void print_table(tableB tab, Context context ) throws IOException, InterruptedException {
 		String tabstring;
@@ -151,18 +175,42 @@ class Pampa_B_Mapper extends Mapper<
 		//return;
 		//}
 		// verifico la presenza di itemset ovunque
-		 if ((tab.get_list().size()==1) & (tab.max_length()>=minsup)) {
-			 
-			 	int deleted = tab.get_deleted();
-				String itemset = tab.showitemsetString();
-				int projection_size= tab.get_projection_size();
-				int length_max_rows=tab.max_length();
+		 //if ((tab.get_list().size()==1) & (tab.max_length()>=minsup)) {
+		//12 aprile
+		if ((tab.get_list().size()==1)) {
+			 	
+				
+				
+				
 	        	// ha solo una voce, non ha senso dividerla
 	        	int num_row=tab.max_length();
 	        	String itemset_complete=tab.showitemsetString();
 	        	//context.write(new Text("***"+itemset_complete), new Text(tab.get_projection_string()+"--"+Integer.toString(num_row)));
 	        	//System.out.println(itemset_complete+"\t"+tab.get_projection_string()+"||||***"+itemset_complete+"|*|"+tab.get_projection_string()+"--"+Integer.toString(num_row));
-	        	context.write(new Text(itemset_complete),new Text(tab.get_projection_string()+"||||***"+itemset_complete+"|*|"+tab.get_projection_string()+"--"+Integer.toString(num_row))); 
+	        	String projection_new = tab.get_projection_string();
+	        	
+	        	if (seen_mod.containsKey(itemset_complete)) { // qui non l'aggiungo la combinazione che sto per inviare fra i closed perchè andrei ad aggiungerla 
+	            	//System.out.println("\n luckily we are here");// se c'è, devo fare i controlli				//prima ancora di esaminarla nel reducer
+					String[] parts2 = ((String) seen_mod.get(itemset_complete)).split("--");
+					String projection_old= parts2[0];
+					int comparison = comparator_f(projection_old,projection_new);
+					if (comparison<=0) {//System.out.println("\n317 la nuova comparable ha detto che esiste già: questo itemsset: "+itemset_nuovo+" trovato qui:" +proiezione_nuova+" era già stato trovato qui: "+proiezione_vecchia);
+						//System.out.println("\n luckily we are here e l'ho eliminata: ");
+					//return;
+					}
+					else {seen_mod.put(itemset_complete,projection_new+"--"+Integer.toString(num_row));
+	             	//System.out.println("\n321ho appena aggiunto:"+itemset_nuovo+"||"+ proiezione_nuova+"--"+Integer.toString(lungh_proiezione+eliminate));
+					//	}
+	            	}
+				}
+				else {seen_mod.put(itemset_complete,projection_new+"--"+Integer.toString(num_row));
+				//System.out.println("\n326ho appena aggiunto:"+itemset_nuovo+"||"+ proiezione_nuova+"--"+Integer.toString(lungh_proiezione+eliminate));
+					}
+	        	
+	        	
+	        	
+	        	//12 aprile
+	        	//context.write(new Text(itemset_complete),new Text(tab.get_projection_string()+"||||***"+itemset_complete+"|*|"+tab.get_projection_string()+"--"+Integer.toString(num_row))); 
 	        	//closed_modificata.put(itemset_completo,proiezione+","+row_riga+"--"+Integer.toString(num_row_riga));
 	         	//System.out.println("\nLUNGHI 1: ho appena scritto:"+itemset_completo+"||"+tab.dammi_proiezione_stringa_spazi2()+"--"+Integer.toString(num_row_riga));
 	        return; }
@@ -172,10 +220,10 @@ class Pampa_B_Mapper extends Mapper<
 			//System.out.println("\n questi elementi erano ovunque:" +presentiovunque);
 			tab.modify_only_list(elements_in_all);
 		}
-		int deleted = tab.get_deleted();
+		
 		String itemset = tab.showitemsetString();
 		int projection_size= tab.get_projection_size();
-		int lungh_max_righe=tab.max_length();
+	
 		
        
         	
@@ -187,14 +235,33 @@ class Pampa_B_Mapper extends Mapper<
 				//
 				//prima controllo se già c'è
 				
-		if (projection_size>=minsup)	{
+		//if (projection_size>=minsup)	{
+			String projection_new =  tab.get_projection_string();
 			//context.write(new Text("***"+itemset), new Text(tab.get_projection_string()+"--"+Integer.toString(projection_size)));
 			//System.out.println(itemset+"\t"+tab.get_projection_string()+"||||***"+itemset+"|*|"+tab.get_projection_string()+"--"+Integer.toString(projection_size));
-        	context.write(new Text(itemset),new Text(tab.get_projection_string()+"||||***"+itemset+"|*|"+tab.get_projection_string()+"--"+Integer.toString(projection_size))); 
-
+        	//context.write(new Text(itemset),new Text(tab.get_projection_string()+"||||***"+itemset+"|*|"+tab.get_projection_string()+"--"+Integer.toString(projection_size))); 
+        	
+        	if (seen_mod.containsKey(itemset)) { // qui non l'aggiungo la combinazione che sto per inviare fra i closed perchè andrei ad aggiungerla 
+            	//System.out.println("\n luckily we are here");// se c'è, devo fare i controlli				//prima ancora di esaminarla nel reducer
+				String[] parts2 = ((String) seen_mod.get(itemset)).split("--");
+				String projection_old= parts2[0];
+				int comparison = comparator_f(projection_old,projection_new);
+				if (comparison<=0) {//System.out.println("\n317 la nuova comparable ha detto che esiste già: questo itemsset: "+itemset_nuovo+" trovato qui:" +proiezione_nuova+" era già stato trovato qui: "+proiezione_vecchia);
+					//System.out.println("\n luckily we are here e l'ho eliminata: ");
+				//return;
+				}
+				else {seen_mod.put(itemset,projection_new+"--"+Integer.toString(projection_size));
+             	//System.out.println("\n321ho appena aggiunto:"+itemset_nuovo+"||"+ proiezione_nuova+"--"+Integer.toString(lungh_proiezione+eliminate));
+				//	}
+            	}
+			}
+			else {seen_mod.put(itemset,projection_new+"--"+Integer.toString(projection_size));
+			//System.out.println("\n326ho appena aggiunto:"+itemset_nuovo+"||"+ proiezione_nuova+"--"+Integer.toString(lungh_proiezione+eliminate));
+				}
+        	
 				//closed_modificata.put(itemset,tab.dammi_proiezione_stringa()+"--"+Integer.toString(lungh_proiezione));
 			//System.out.println("\n rigo 276 "+ lungh_proiezione+" ma minsup e' "+minsup+" itemset: "+ itemset);		
-		}
+		//}
 		
 		// inizio a verificare se chiamare  le altre
 		
@@ -228,14 +295,14 @@ class Pampa_B_Mapper extends Mapper<
 			if (found2) {
 				found.add(i);  // verificare -- mi pare si possa eliminare
 			
-			tabtemp.add_deleted(deleted);  //eliminate potrebbe essere stato aggiornato
+			tabtemp.add_deleted(tab.get_deleted());  //eliminate potrebbe essere stato aggiornato
 			
 			tabtemp.create_projection_modify_list(projection,i);
 			//se l'itemset è già visto salto
 			//if (visti.contains(tabtemp.mostraitemsetString())) continue;
 			
 			String itemset_new=tabtemp.showitemsetString();
-			String projection_new=tabtemp.get_projection_string_spaces();
+			projection_new=tabtemp.get_projection_string_spaces();
 			
 			if (seen_mod.containsKey(itemset_new)) { // qui non l'aggiungo la combinazione che sto per inviare fra i closed perchè andrei ad aggiungerla 
 				// se c'è, devo fare i controlli				//prima ancora di esaminarla nel reducer
@@ -245,28 +312,28 @@ class Pampa_B_Mapper extends Mapper<
 				if (comparison<=0) {//System.out.println("\n317 la nuova comparable ha detto che esiste già: questo itemsset: "+itemset_nuovo+" trovato qui:" +proiezione_nuova+" era già stato trovato qui: "+proiezione_vecchia);
 				continue;
 				}
-				else {seen_mod.put(itemset_new,projection_new+"--"+Integer.toString(projection_size+deleted));
+				else {//12aprseen_mod.put(itemset_new,projection_new+"--"+Integer.toString(projection_size+deleted));
              	//System.out.println("\n321ho appena aggiunto:"+itemset_nuovo+"||"+ proiezione_nuova+"--"+Integer.toString(lungh_proiezione+eliminate));
 				//	}
             	}
 			}
-			else {seen_mod.put(itemset_new,projection_new+"--"+Integer.toString(projection_size+deleted));
+			else {//12aprseen_mod.put(itemset_new,projection_new+"--"+Integer.toString(projection_size+deleted));
 			//System.out.println("\n326ho appena aggiunto:"+itemset_nuovo+"||"+ proiezione_nuova+"--"+Integer.toString(lungh_proiezione+eliminate));
 				}
-			if ((tabtemp.get_list().size()==1) & (tabtemp.max_length()>=minsup)){
-				 
-			 	int deleted2 = tabtemp.get_deleted();
-				String itemset2 = tabtemp.showitemsetString();
-				int projection_size2= tabtemp.get_projection_size();
-				int length_max_row2=tab.max_length();
+			//12apriif ((tabtemp.get_list().size()==1) & (tabtemp.max_length()>=minsup)){
+			if (tabtemp.get_list().size()==1) {
+			 	
 	        	// ha solo una voce, non ha senso dividerla
 	        	int num_row_row2=tabtemp.max_length();
 	        	String itemset_complete2=tabtemp.showitemsetString();
 	        	//System.out.println("\n rigo 349"+itemset_completo2+num_row_riga2);
 	        	//context.write(new Text("***"+itemset_complete2), new Text(tabtemp.get_projection_string()+"--"+Integer.toString(num_row_row2)));
 	        	//System.out.println(itemset_complete2+"\t"+tab.get_projection_string()+"--"+Integer.toString(num_row_row2));
-	        	context.write(new Text(itemset_complete2),new Text(tabtemp.get_projection_string()+"||||***"+itemset_complete2+"|*|"+tabtemp.get_projection_string()+"--"+Integer.toString(num_row_row2))); 
-	        	
+	        	//apr12context.write(new Text(itemset_complete2),new Text(tabtemp.get_projection_string()+"||||***"+itemset_complete2+"|*|"+tabtemp.get_projection_string()+"--"+Integer.toString(num_row_row2))); 
+	        
+				seen_mod.put(itemset_complete2,tabtemp.get_projection_string()+"--"+Integer.toString(num_row_row2));
+				//System.out.println("\n326ho appena aggiunto:"+itemset_nuovo+"||"+ proiezione_nuova+"--"+Integer.toString(lungh_proiezione+eliminate));
+					
 	        	//closed_modificata.put(itemset_completo,proiezione+","+row_riga+"--"+Integer.toString(num_row_riga));
 	        		//System.out.println("\nLUNGHI 1_: ho appena scritto:"+itemset_completo2+"||"+tabtemp.dammi_proiezione_stringa_spazi2()+"--"+Integer.toString(num_row_riga2));
 	        continue; }
@@ -283,9 +350,10 @@ class Pampa_B_Mapper extends Mapper<
 			stopTime=System.currentTimeMillis();
 			//System.out.println("time:"+Long.toString(stopTime-startTime));
 			long elapsedTime=(stopTime-startTime)/1000;
-			if (elapsedTime>(60*60*2)) print_table(tabtemp,context);
+			
+			if (elapsedTime>(60*60*1)) print_table(tabtemp,context);
 			else {
-			if ((((runtime.freeMemory()) / mb)>25)&&(iter<=max_tables)) {recursive(tabtemp,context);}
+			if ((((runtime.freeMemory()) / mb)>0)&&(iter<=max_tables)) {recursive(tabtemp,context);}
 			else {print_table(tabtemp,context);}}
 			tabtemp=null;
 			//for (int a=0; a<=br_to_deep;a++)
@@ -294,7 +362,7 @@ class Pampa_B_Mapper extends Mapper<
 			//if ((trovato2==1)&(iter<=3000)) ricorsiva(tabtemp,context);
 			//else {stampa_tabella(tabtemp, context);
 			//tabtemp=null;}
-			
+		
 			}
 			
 	}
@@ -313,13 +381,27 @@ class Pampa_B_Mapper extends Mapper<
     	// read the minsup
 		minsup = Integer.parseInt(context.getConfiguration().get("minsup"));
 		max_tables = Integer.parseInt(context.getConfiguration().get("max_tables"));
-		startTime=System.currentTimeMillis();
-    	
+		br_to_deep = Integer.parseInt(context.getConfiguration().get("br_to_deep"));
+		
 	}
 	
 	protected void cleanup (Context context) throws IOException, InterruptedException {
+		empty_tab_input(context);
 		Heartbeat.stopbeating();
 		context.getCounter("sent_tables","sent_tables").increment(sent_tables);
+		Enumeration e = seen_mod.keys();
+		Object ciao;
+		while (e.hasMoreElements()) {	
+			String key = (String) e.nextElement();
+			String temp = (String) seen_mod.get(key);
+			temp = (String) seen_mod.get(key);
+			
+			String[] parts = ((String) seen_mod.get(key)).split("--");
+			if (Integer.parseInt(parts[1])>=minsup) {
+			context.write(new Text(key), new Text(parts[0]+"||||***"+key+"|*|"+parts[0]+"--"+parts[1]));
+			//System.out.println("\n"+key+"\t"+parts[0]+"||||***"+key+"|*|"+parts[0]+"--"+parts[1]);
+			}
+			}
 		}
 	
     @Override
@@ -367,14 +449,11 @@ class Pampa_B_Mapper extends Mapper<
 					//System.out.println("\n luckily we are here e l'ho eliminata: ");
 				return;
 				}
-				else {seen_mod.put(itemset_complete,projection_new+"--"+Integer.toString(projection_size+deleted));
-             	//System.out.println("\n321ho appena aggiunto:"+itemset_nuovo+"||"+ proiezione_nuova+"--"+Integer.toString(lungh_proiezione+eliminate));
-				//	}
-            	}
+				
 			}
-			else {seen_mod.put(itemset_complete,projection_new+"--"+Integer.toString(projection_size+deleted));
-			//System.out.println("\n326ho appena aggiunto:"+itemset_nuovo+"||"+ proiezione_nuova+"--"+Integer.toString(lungh_proiezione+eliminate));
-				}
+			
+            
+            
             for (int f=0;f<tables.length;f++) {
             	row_B rowtemp;										
             	String [] row2= tables[f].split(",");
@@ -390,11 +469,19 @@ class Pampa_B_Mapper extends Mapper<
             	tab.add_row(rowtemp);
             	
             }
+             // per ora lo metto qui poi lo metto prima
+            tab_input.put(projection_new, tab);
+            count_input++;
+            //if(count_input%max_tables==0)
+            	//{empty_tab_input(context);
+            	//count_input=0;}
             
-            recursive (tab,context);
+           // recursive (tab,context);
            }
     		else {
-    			String[] parts1 = row.split("\t");
+    			//String[] parts1 = row.split("\t");
+    			String [] row_itemset=row.split("\\|\\*\\|");
+    			String[] parts1 = row_itemset[0].split("\t");
     			String oldkey=parts1[0];
     			String oldvalue=parts1[1];
     			String[] parts2= parts1[1].split("--");
@@ -412,7 +499,7 @@ class Pampa_B_Mapper extends Mapper<
     					//ignore it!
     				}
     				else {
-    	                context.write(new Text(itemset_complete),new Text(projection+"||||"+oldkey+"|*|"+oldvalue));   				
+    	                //12aprcontext.write(new Text(itemset_complete),new Text(projection+"||||"+oldkey+"|*|"+oldvalue));   				
     					seen_mod.put(itemset_complete,projection+"--"+minsup);
                  	//System.out.println("\n321ho appena aggiunto:"+itemset_nuovo+"||"+ proiezione_nuova+"--"+Integer.toString(lungh_proiezione+eliminate));
     				//	}
@@ -420,7 +507,7 @@ class Pampa_B_Mapper extends Mapper<
     			}
     			else {//seen_mod.put(itemset_new,projection_new+"--"+Integer.toString(projection_size+deleted));
     			//System.out.println("\n326ho appena aggiunto:"+itemset_nuovo+"||"+ proiezione_nuova+"--"+Integer.toString(lungh_proiezione+eliminate));
-    				context.write(new Text(itemset_complete),new Text(projection+"||||"+oldkey+"|*|"+oldvalue));   				
+    				//12aprcontext.write(new Text(itemset_complete),new Text(projection+"||||"+oldkey+"|*|"+oldvalue));   				
 					seen_mod.put(itemset_complete,projection+"--"+minsup);
     				}
                 //context.write(new Text(itemset_complete),new Text(projection+"||||"+oldkey+"|*|"+oldvalue));   
